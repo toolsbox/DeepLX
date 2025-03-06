@@ -5,6 +5,16 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      logLevel:
+        description: 'Log level'
+        required: true
+        default: 'warning'
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'production'
 
 env:
   DOCKER_IMAGE_NAME: toolsbox/deeplx-with-proxy
