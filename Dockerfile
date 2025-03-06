@@ -32,9 +32,16 @@
     EXPOSE 1199
     
     # 创建 supervisord 配置文件
-    RUN echo "[supervisord]\nnodaemon=true\n" > /etc/supervisord.conf && \
-        echo "[program:deeplx]\ncommand=/app/deeplx\n" >> /etc/supervisord.conf && \
-        echo "[program:proxy]\ncommand=/app/deeplx_proxy\n" >> /etc/supervisord.conf
+    RUN cat <<EOF > /etc/supervisord.conf
+[supervisord]
+nodaemon=true
+
+[program:deeplx]
+command=/app/deeplx
+
+[program:proxy]
+command=/app/deeplx_proxy
+EOF
     
     # 设置启动命令
     CMD ["supervisord", "-c", "/etc/supervisord.conf"]
