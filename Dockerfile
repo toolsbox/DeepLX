@@ -1,5 +1,5 @@
 # ---------- Stage 1: Build DeepLX main service ----------
-    FROM golang:1.18-alpine AS builder_main
+    FROM golang:1.24-alpine AS builder_main
     WORKDIR /src
     # 复制整个项目（确保 go.mod, go.sum 以及源码文件都在内）
     COPY . .
@@ -8,7 +8,7 @@
     RUN CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build -a -installsuffix cgo -o deeplx .
     
     # ---------- Stage 2: Build Proxy service ----------
-    FROM golang:1.18-alpine AS builder_proxy
+    FROM golang:1.24-alpine AS builder_proxy
     WORKDIR /proxy
     # 仅复制 proxy 目录内容
     COPY proxy/ .
