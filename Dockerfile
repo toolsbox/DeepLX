@@ -1,54 +1,41 @@
-# 使用官方的 Python 镜像作为基础镜像
-FROM python:3.11-slim AS proxy_builder
-
-# 设置工作目录
-WORKDIR /app
-
-# 将代理服务器脚本复制到容器中
-COPY deeplx_proxy.py .
-
-# 安装代理服务器所需的依赖
-RUN pip install flask requests
-
-# 使用官方的 Go 镜像作为构建器
-FROM golang:1.20-alpine AS builder
-
-# 设置工作目录
-WORKDIR /go/src/github.com/OwO-Network/DeepLX
-
-# 将项目文件复制到构建器中
-COPY . .
-
-# 下载依赖并构建可执行文件
-RUN go mod download
-RUN CGO_ENABLED=0 go build -a -installsuffix cgo -o deeplx .
-
-# 使用一个精简的基础镜像
-FROM alpine:latest
-
-# 设置工作目录
-WORKDIR /app
-
-# 从构建器复制构建的可执行文件
-COPY --from=builder /go/src/github.com/OwO-Network/DeepLX/deeplx .
-
-# 从代理服务器构建器复制代理服务器脚本和依赖
-COPY --from=proxy_builder /app/deeplx_proxy.py .
-COPY --from=proxy_builder /usr/local/lib/python3.11 /usr/local/lib/python3.11
-COPY --from=proxy_builder /usr/local/bin/flask /usr/local/bin/flask
-COPY --from=proxy_builder /usr/local/bin/python3 /usr/local/bin/python3
-
-# 暴露端口 1188（DeepLX 服务）和 1199（代理服务）
-EXPOSE 1188
-EXPOSE 1199
-
-# 使用 supervisord 来管理多个服务
-RUN apk add --no-cache supervisor
-
-# 创建 supervisord 配置文件
-RUN echo "[supervisord]\nnodaemon=true\n" > /etc/supervisord.conf \
-    && echo "[program:deeplx]\ncommand=/app/deeplx\n" >> /etc/supervisord.conf \
-    && echo "[program:proxy]\ncommand=python3 /app/deeplx_proxy.py\n" >> /etc/supervisord.conf
-
-# 设置容器启动时运行 supervisord
-CMD ["supervisord", "-c", "/etc/supervisord.conf"]
+# ---------- Stage 1: Build DeepLX main service ----------
+    FROM golang:1.18-alpine AS builder_main
+    WORKDIR /src
+    # 复制整个项目（确保 go.mod, go.sum 以及源码文件都在内）
+    COPY . .
+    # 下载依赖并构建 DeepLX 可执行文件
+    RUN go mod download
+    RUN CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build -a -installsuffix cgo -o deeplx .
+    
+    # ---------- Stage 2: Build Proxy service ----------
+    FROM golang:1.18-alpine AS builder_proxy
+    WORKDIR /proxy
+    # 仅复制 proxy 目录内容
+    COPY proxy/ .
+    RUN go mod tidy
+    RUN CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build -a -o deeplx_proxy .
+    
+    # ---------- Stage 3: Final image ----------
+    FROM alpine:latest
+    WORKDIR /app
+    
+    # 复制 DeepLX main service binary
+    COPY --from=builder_main /src/deeplx .
+    # 复制 proxy service binary
+    COPY --from=builder_proxy /proxy/deeplx_proxy .
+    
+    # 安装 supervisord
+    RUN apk add --no-cache supervisor
+    
+    # 暴露端口：1188 用于 DeepLX 服务，1199 用于代理服务
+    EXPOSE 1188
+    EXPOSE 1199
+    
+    # 创建 supervisord 配置文件
+    RUN echo "[supervisord]\nnodaemon=true\n" > /etc/supervisord.conf && \
+        echo "[program:deeplx]\ncommand=/app/deeplx\n" >> /etc/supervisord.conf && \
+        echo "[program:proxy]\ncommand=/app/deeplx_proxy\n" >> /etc/supervisord.conf
+    
+    # 设置启动命令
+    CMD ["supervisord", "-c", "/etc/supervisord.conf"]
+    
