@@ -19,9 +19,11 @@ WORKDIR /go/src/github.com/OwO-Network/DeepLX
 # 将项目文件复制到构建器中
 COPY . .
 
+RUN apk update && apk add --no-cache build-base
+
 # 下载依赖并构建可执行文件
 RUN go mod download
-RUN CGO_ENABLED=0 go build -a -installsuffix cgo -o deeplx .
+RUN CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build -a -installsuffix cgo -o deeplx .
 
 # 使用一个精简的基础镜像
 FROM alpine:latest
