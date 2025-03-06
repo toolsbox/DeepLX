@@ -17,7 +17,7 @@ on:
         default: 'production'
 
 env:
-  DOCKER_IMAGE_NAME: toolsbox/deeplx-with-proxy
+  DOCKER_IMAGE_NAME: xtoolsbox/deeplx-with-proxy
   GHCR_IMAGE_NAME: toolsbox/deeplx-with-proxy
   DOCKER_USERNAME: ${{ secrets.DOCKERHUB_USERNAME}}
   DOCKER_PASSWORD: ${{ secrets.DOCKERHUB_TOKEN}}
