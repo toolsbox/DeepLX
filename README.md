@@ -1,3 +1,5 @@
+[![Chinese](https://img.shields.io/badge/lang-中文-blue.svg)](README_CN.md)
+
 # DeepLX with Proxy
 
 DeepLX-with-Proxy is an enhanced version of DeepLX, integrating a lightweight proxy service that enables HTTP GET requests to be converted into HTTP POST requests. This allows applications that only support GET requests, such as PotPlayer, to use the DeepLX translation API seamlessly.
